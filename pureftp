@@ -1,0 +1,4 @@
+PUREFTPTRANSFER %{DATA:remote} %{USER:ident} %{USER:username} +\[%{HTTPDATE:timestamp}\] "(?:%{WORD:method} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion})?|%{DATA:rawrequest})" %{NUMBER:response:int} (?:%{NUMBER:bytes:int}|-)
+PUREFTPSYSLOG %{SYSLOGTIMESTAMP:timestamp} (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} pure-ftpd: \(%{DATA:username}@%{IPORHOST:remote}\) \[%{DATA:loglevel}\] %{GREEDYDATA:logline}
+PUREFTPAUTHFAIL %{SYSLOGTIMESTAMP:timestamp} (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} pure-ftpd: \(\?@%{IPORHOST:remote}\) \[%{DATA:loglevel}\] Authentication failed for user \[%{DATA:username}\]
+PUREFTPAUTHSUCCESS %{SYSLOGTIMESTAMP:timestamp} (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} pure-ftpd: \(\?@%{IPORHOST:remote}\) \[%{DATA:loglevel}\] %{DATA:username} is now logged in

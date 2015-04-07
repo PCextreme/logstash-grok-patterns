@@ -1,0 +1,67 @@
+# Milter
+HELO (?:\[%{IP:helo}\]|%{HOST:helo}|%{DATA:helo})
+ 
+MILTERCONNECT %{QUEUEID:qid}: milter-reject: CONNECT from %{CLIENT:client}: %{GREEDYDATA:milter_reason}; proto=%{WORD:proto}
+MILTERUNKNOWN %{QUEUEID:qid}: milter-reject: UNKNOWN from %{CLIENT:client}: %{GREEDYDATA:milter_reason}; proto=%{WORD:proto}
+MILTEREHLO %{QUEUEID:qid}: milter-reject: EHLO from %{CLIENT:client}: %{GREEDYDATA:milter_reason}; proto=%{WORD:proto} helo=<%{HELO}>
+MILTERMAIL %{QUEUEID:qid}: milter-reject: MAIL from %{CLIENT:client}: %{GREEDYDATA:milter_reason}; from=<%{EMAILADDRESS:from}> proto=%{WORD:proto} helo=<%{HELO}>
+MILTERHELO %{QUEUEID:qid}: milter-reject: HELO from %{CLIENT:client}: %{GREEDYDATA:milter_reason}; proto=%{WORD:proto} helo=<%{HELO}>
+MILTERRCPT %{QUEUEID:qid}: milter-reject: RCPT from %{CLIENT:client}: %{GREEDYDATA:milter_reason}; from=<%{EMAILADDRESS:from}> to=<%{EMAILADDRESS:to}> proto=%{WORD:proto} helo=<%{HELO}>
+MILTERENDOFMESSAGE %{QUEUEID:qid}: milter-reject: END-OF-MESSAGE from %{CLIENT:client}: %{GREEDYDATA:milter_reason}; from=<%{EMAILADDRESS:from}> to=<%{EMAILADDRESS:to}> proto=%{WORD:proto} helo=<%{HELO}>
+ 
+# Postfix stuff
+QUEUEID (?:[A-F0-9]+|NOQUEUE)
+EMAILADDRESSPART [a-zA-Z0-9_.+-=:]+
+EMAILADDRESS %{EMAILADDRESSPART:local}@%{EMAILADDRESSPART:domain}
+SASLUSERNAME (%{EMAILADDRESSPART:username}@%{EMAILADDRESSPART:domain}|%{GREEDYDATA:username})
+RELAY (?:%{HOSTNAME:relayhost}(?:\[%{IP:relayip}\](?::[0-9]+(.[0-9]+)?)?)?)
+CLIENT (?:%{HOSTNAME:clienthost}(?:\[%{IP:remote}\](?::[0-9]+(.[0-9]+)?)?)?)
+POSREAL [0-9]+(.[0-9]+)?
+#DELAYS %{POSREAL:a}/%{POSREAL:b}/%{POSREAL:c}/%{POSREAL:d}
+#DELAYS (%{POSREAL}[/]*)+
+DSN %{NONNEGINT}.%{NONNEGINT}.%{NONNEGINT}
+STATUS sent|deferred|bounced|expired
+PERMERROR 5[0-9]{2}
+MESSAGELEVEL reject|warning|error|fatal|panic
+ 
+POSTFIXSMTPMESSAGE %{MESSAGELEVEL}: %{GREEDYDATA:reason}
+POSTFIXACTION discard|dunno|filter|hold|ignore|info|prepend|redirect|replace|reject|warn
+ 
+# postfix/smtp and postfix/lmtp, postfix/local and postfix/error
+POSTFIXSMTP %{POSTFIXSMTPRELAY}|%{POSTFIXSMTPCONNECT}|%{POSTFIXSMTP5XX}|%{POSTFIXSMTPREFUSAL}|%{POSTFIXSMTPLOSTCONNECTION}|%{POSTFIXSMTPTIMEOUT}
+POSTFIXSMTPRELAY %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>,(?:\sorig_to=<%{EMAILADDRESS:orig_to}>,)? relay=%{RELAY},(?: conn_use=%{POSREAL:conn_use},)? (%{WORD}=%{DATA},)+ dsn=%{DSN:dsn}, status=%{STATUS:result} %{GREEDYDATA:reason}
+POSTFIXSMTPCONNECT connect to %{RELAY}: %{GREEDYDATA:reason}
+POSTFIXSMTP5XX %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>,(?:\sorig_to=<%{EMAILADDRESS:orig_to}>,)? relay=%{RELAY}, (%{WORD}=%{DATA},)+ dsn=%{DSN:dsn}, status=%{STATUS:result} \(host %{HOSTNAME}\[%{IP}\] said: %{PERMERROR:responsecode} %{DATA:smtp_response} \(in reply to %{DATA:command} command\)\)
+POSTFIXSMTPREFUSAL %{QUEUEID:qid}: host %{RELAY} refused to talk to me: %{GREEDYDATA:reason}
+POSTFIXSMTPLOSTCONNECTION %{QUEUEID:qid}: lost connection with %{RELAY} while %{GREEDYDATA:reason}
+POSTFIXSMTPTIMEOUT %{QUEUEID:qid}: conversation with %{RELAY} timed out while %{GREEDYDATA:reason}
+ 
+ 
+# postfix/smtpd
+POSTFIXSMTPD %{POSTFIXSMTPDCONNECTS}|%{POSTFIXSMTPDMILTER}|%{POSTFIXSMTPDACTIONS}|%{POSTFIXSMTPDTIMEOUTS}|%{POSTFIXSMTPDLOGIN}|%{POSTFIXSMTPDCLIENT}|%{POSTFIXSMTPDNOQUEUE}|%{POSTFIXSMTPDWARNING}|%{POSTFIXSMTPDLOSTCONNECTION}
+POSTFIXSMTPDCONNECTS (?:dis)?connect from %{CLIENT}
+POSTFIXSMTPDMILTER %{MILTERCONNECT}|%{MILTERUNKNOWN}|%{MILTEREHLO}|%{MILTERMAIL}|%{MILTERHELO}|%{MILTERRCPT}
+POSTFIXSMTPDACTIONS %{QUEUEID:qid}: %{POSTFIXACTION:postfix_action}: %{DATA:command} from %{CLIENT}: %{PERMERROR:responsecode} %{DSN:dsn} %{DATA}: %{DATA:reason}; from=<%{EMAILADDRESS:from}> to=<%{EMAILADDRESS:to}> proto=%{DATA:proto} helo=<%{HELO}>
+#POSTFIXSMTPDACTIONS %{QUEUEID:qid}: %{POSTFIXACTION:postfix_action}: %{DATA:command} from %{CLIENT}: %{DATA:smtp_response}: %{DATA:reason}; from=<%{EMAILADDRESS:from}> to=<%{EMAILADDRESS:to}> proto=%{DATA:proto} helo=<%{HELO}>
+POSTFIXSMTPDTIMEOUTS timeout after %{DATA:command} from %{CLIENT}
+POSTFIXSMTPDLOGIN %{QUEUEID:qid}: client=%{CLIENT}, sasl_method=%{DATA:saslmethod}, sasl_username=%{SASLUSERNAME}
+POSTFIXSMTPDCLIENT %{QUEUEID:qid}: client=%{CLIENT}
+POSTFIXSMTPDNOQUEUE NOQUEUE: %{POSTFIXACTION:postfix_action}: %{DATA:command} from %{CLIENT}: %{GREEDYDATA:reason}
+POSTFIXSMTPDWARNING warning: %{IP}: %{GREEDYDATA:reason}
+POSTFIXSMTPDLOSTCONNECTION lost connection after %{DATA:smtp_response} from %{CLIENT}
+ 
+# postfix/cleanup
+POSTFIXCLEANUP %{POSTFIXCLEANUPMESSAGE}|%{POSTFIXCLEANUPMILTER}
+POSTFIXCLEANUPMESSAGE %{QUEUEID:qid}: (resent-)?message-id=<%{GREEDYDATA:messageid}>
+POSTFIXCLEANUPMILTER %{MILTERENDOFMESSAGE}
+ 
+# postfix/bounce
+POSTFIXBOUNCE %{QUEUEID:qid}: sender non-delivery notification: %{QUEUEID:bouncequeueid}
+ 
+# postfix/qmgr and postfix/pickup
+POSTFIXQMGR %{QUEUEID:qid}: (?:removed|from=<(?:%{EMAILADDRESS:from})?>(?:, size=%{POSINT:size}, nrcpt=%{POSINT:nrcpt} \(%{GREEDYDATA:queuestatus}\))?)
+ 
+# postfix/anvil
+POSTFIXANVIL statistics: %{DATA:anvilstatistic} for (%{DATA:remotehost}) at %{SYSLOGTIMESTAMP:timestamp}
+ 
+MAILMESSAGE %{SYSLOGBASE2} (%{POSTFIXSMTP}|%{POSTFIXANVIL}|%{POSTFIXQMGR}|%{POSTFIXBOUNCE}|%{POSTFIXCLEANUP}|%{POSTFIXSMTPD})

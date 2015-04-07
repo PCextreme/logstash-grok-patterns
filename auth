@@ -1,0 +1,6 @@
+SSH_PUB_LOGIN %{SYSLOGBASE} Accepted publickey for %{USERNAME:username} from %{IPORHOST:remote} port %{BASE10NUM:port:int} %{WORD:protocol}
+SSH_PASSWORD_LOGIN %{SYSLOGBASE} Accepted password for %{USERNAME:username} from %{IPORHOST:remote} port %{BASE10NUM:port:int} %{WORD:protocol}
+SSH_FAILED_LOGIN %{SYSLOGBASE} Failed password for (invalid user |)%{USERNAME:username} from %{IPORHOST:remote} port %{BASE10NUM:port:int} %{WORD:protocol}
+SSH_DISCONNECT %{SYSLOGBASE} Received disconnect from %{IPORHOST:remote}: %{BASE10NUM:code}: %{GREEDYDATA:reason}
+SSH_SNOOPY %{SYSLOGTIMESTAMP:timestamp} (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} snoopy(?:\[%{POSINT:pid}\])?: \[uid:%{INT:uid:int} sid:%{INT:sid:int} tty:%{DATA:tty} cwd:%{DATA:cwd} filename:%{DATA:filename}\]: %{GREEDYDATA:command}
+AUTH_LOG_LINE %{SYSLOGBASE} %{GREEDYDATA:logline}
