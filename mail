@@ -16,20 +16,21 @@ EMAILADDRESS %{EMAILADDRESSPART:local}@%{EMAILADDRESSPART:domain}
 SASLUSERNAME (%{EMAILADDRESSPART:username}@%{EMAILADDRESSPART:domain}|%{GREEDYDATA:username})
 RELAY (?:%{HOSTNAME:relayhost}(?:\[%{IP:relayip}\](?::[0-9]+(.[0-9]+)?)?)?)
 CLIENT (?:%{HOSTNAME:clienthost}(?:\[%{IP:clientip}\](?::[0-9]+(.[0-9]+)?)?)?)
-POSREAL (%{BASE16FLOAT}:%{BASE16NUM})
+POSREAL (%{BASE16FLOAT}|%{BASE16NUM})
 DELAYS %{POSREAL:a}/%{POSREAL:b}/%{POSREAL:c}/%{POSREAL:d}
-DELAY %{POSREAL:delay}
+DELAY %{POSREAL}
 DSN %{NONNEGINT}.%{NONNEGINT}.%{NONNEGINT}
 STATUS sent|deferred|bounced|expired
 PERMERROR 5[0-9]{2}
 MESSAGELEVEL reject|warning|error|fatal|panic
+SYSLOGNOPROG (?:%{SYSLOGTIMESTAMP:timestamp}|%{TIMESTAMP_ISO8601:timestamp8601}) (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource}
 
 POSTFIXSMTPMESSAGE %{MESSAGELEVEL}: %{GREEDYDATA:reason}
 POSTFIXACTION discard|dunno|filter|hold|ignore|info|prepend|redirect|replace|reject|warn
 
 # postfix/smtp and postfix/lmtp, postfix/local and postfix/error
 POSTFIXSMTP %{SYSLOGBASE2} %{POSTFIXSMTPRELAY}|%{POSTFIXSMTPCONNECT}|%{POSTFIXSMTP5XX}|%{POSTFIXSMTPREFUSAL}|%{POSTFIXSMTPLOSTCONNECTION}|%{POSTFIXSMTPTIMEOUT}
-POSTFIXSMTPRELAY %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>,(?:\sorig_to=<%{EMAILADDRESS:orig_to}>,)? relay=%{RELAY}, delay=%{DELAY},(?: conn_use=%{POSREAL:conn_use},)? (%{WORD}=%{DATA},)+ dsn=%{DSN:dsn}, status=%{STATUS:status} %{GREEDYDATA:reason}
+POSTFIXSMTPRELAY %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>,(?:\sorig_to=<%{EMAILADDRESS:orig_to}>,)? relay=%{RELAY},(?: conn_use=%{POSREAL:conn_use},)? delay=%{DELAY:delay}, delays=%{DELAYS:delays}, dsn=%{DSN:dsn}, status=%{STATUS:status} %{GREEDYDATA:reason}
 POSTFIXSMTPCONNECT connect to %{RELAY}: %{GREEDYDATA:reason}
 POSTFIXSMTP5XX %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>,(?:\sorig_to=<%{EMAILADDRESS:orig_to}>,)? relay=%{RELAY}, (%{WORD}=%{DATA},)+ dsn=%{DSN:dsn}, status=%{STATUS:status} \(host %{HOSTNAME}\[%{IP}\] said: %{PERMERROR:responsecode} %{DATA:smtp_response} \(in reply to %{DATA:command} command\)\)
 POSTFIXSMTPREFUSAL %{QUEUEID:qid}: host %{RELAY} refused to talk to me: %{GREEDYDATA:reason}
@@ -64,4 +65,4 @@ POSTFIXQMGR %{SYSLOGBASE2} %{QUEUEID:qid}: (?:removed|from=<(?:%{EMAILADDRESS:fr
 POSTFIXANVIL %{SYSLOGBASE2} statistics: %{DATA:anvilstatistic} for (%{DATA:remotehost}) at %{SYSLOGTIMESTAMP:timestamp}
 
 # postfix/virtual
-POSTFIXVIRTUAL %{SYSLOGBASE2} %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>, relay=virtual, delay=%{DELAY}, delays=%{DELAYS} dsn=%{DSN:dsn}, status=%{STATUS:status} %{GREEDYDATA:reason}
+POSTFIXVIRTUAL %{SYSLOGBASE2} %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>, relay=virtual, delay=%{DELAY:delay}, delays=%{DELAYS:delays}, dsn=%{DSN:dsn}, status=%{STATUS:status} %{GREEDYDATA:reason}
