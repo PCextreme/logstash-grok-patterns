@@ -24,13 +24,13 @@ STATUS sent|deferred|bounced|expired
 PERMERROR 5[0-9]{2}
 MESSAGELEVEL reject|warning|error|fatal|panic
 SYSLOGNOPROG (?:%{SYSLOGTIMESTAMP:timestamp}|%{TIMESTAMP_ISO8601:timestamp8601}) (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource}
+THROTTLE %{WORD}\(%{WORD}\)
 
 POSTFIXSMTPMESSAGE %{MESSAGELEVEL}: %{GREEDYDATA:reason}
 POSTFIXACTION discard|dunno|filter|hold|ignore|info|prepend|redirect|replace|reject|warn
 
 # postfix/smtp and postfix/lmtp, postfix/local and postfix/error
-POSTFIXSMTP %{SYSLOGBASE2} %{POSTFIXSMTPRELAY}|%{POSTFIXSMTPCONNECT}|%{POSTFIXSMTP5XX}|%{POSTFIXSMTPREFUSAL}|%{POSTFIXSMTPLOSTCONNECTION}|%{POSTFIXSMTPTIMEOUT}
-POSTFIXSMTPRELAY %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>,(?:\sorig_to=<%{EMAILADDRESS:orig_to}>,)? relay=%{RELAY},(?: conn_use=%{POSREAL:conn_use},)? delay=%{DELAY:delay}, delays=%{DELAYS:delays}, dsn=%{DSN:dsn}, status=%{STATUS:status} %{GREEDYDATA:reason}
+POSTFIXSMTP %{SYSLOGNOPROG} postfix/smtp\[%{POSINT:pid}\]: %{POSTFIXSMTPCONNECT}|%{POSTFIXSMTP5XX}|%{POSTFIXSMTPREFUSAL}|%{POSTFIXSMTPLOSTCONNECTION}|%{POSTFIXSMTPTIMEOUT}
 POSTFIXSMTPCONNECT connect to %{RELAY}: %{GREEDYDATA:reason}
 POSTFIXSMTP5XX %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>,(?:\sorig_to=<%{EMAILADDRESS:orig_to}>,)? relay=%{RELAY}, (%{WORD}=%{DATA},)+ dsn=%{DSN:dsn}, status=%{STATUS:status} \(host %{HOSTNAME}\[%{IP}\] said: %{PERMERROR:responsecode} %{DATA:smtp_response} \(in reply to %{DATA:command} command\)\)
 POSTFIXSMTPREFUSAL %{QUEUEID:qid}: host %{RELAY} refused to talk to me: %{GREEDYDATA:reason}
@@ -38,7 +38,7 @@ POSTFIXSMTPLOSTCONNECTION %{QUEUEID:qid}: lost connection with %{RELAY} while %{
 POSTFIXSMTPTIMEOUT %{QUEUEID:qid}: conversation with %{RELAY} timed out while %{GREEDYDATA:reason}
 
 # postfix/smtpd
-POSTFIXSMTPD %{SYSLOGBASE2} %{POSTFIXSMTPDCONNECTS}|%{POSTFIXSMTPDMILTER}|%{POSTFIXSMTPDACTIONS}|%{POSTFIXSMTPDTIMEOUTS}|%{POSTFIXSMTPDLOGIN}|%{POSTFIXSMTPDCLIENT}|%{POSTFIXSMTPDNOQUEUE}|%{POSTFIXSMTPDWARNING}|%{POSTFIXSMTPDLOSTCONNECTION}
+POSTFIXSMTPD %{SYSLOGNOPROG} postfix/smtpd\[%{POSINT:pid}\]: %{POSTFIXSMTPDCONNECTS}|%{POSTFIXSMTPDMILTER}|%{POSTFIXSMTPDACTIONS}|%{POSTFIXSMTPDTIMEOUTS}|%{POSTFIXSMTPDLOGIN}|%{POSTFIXSMTPDCLIENT}|%{POSTFIXSMTPDNOQUEUE}|%{POSTFIXSMTPDWARNING}|%{POSTFIXSMTPDLOSTCONNECTION}
 POSTFIXSMTPDCONNECTS (?:dis)?connect from %{CLIENT}
 POSTFIXSMTPDMILTER %{MILTERCONNECT}|%{MILTERUNKNOWN}|%{MILTEREHLO}|%{MILTERMAIL}|%{MILTERHELO}|%{MILTERRCPT}
 POSTFIXSMTPDACTIONS %{QUEUEID:qid}: %{POSTFIXACTION:postfix_action}: %{DATA:command} from %{CLIENT}: %{PERMERROR:responsecode} %{DSN:dsn} %{DATA}: %{DATA:reason}; from=<%{EMAILADDRESS:from}> to=<%{EMAILADDRESS:to}> proto=%{DATA:proto} helo=<%{HELO}>
@@ -51,18 +51,30 @@ POSTFIXSMTPDWARNING warning: %{IP:clientip}: %{GREEDYDATA:reason}
 POSTFIXSMTPDLOSTCONNECTION lost connection after %{DATA:smtp_response} from %{CLIENT}
 
 # postfix/cleanup
-POSTFIXCLEANUP %{SYSLOGBASE2} %{POSTFIXCLEANUPMESSAGE}|%{POSTFIXCLEANUPMILTER}
+POSTFIXCLEANUP %{SYSLOGNOPROG} postfix/cleanup\[%{POSINT:pid}\]: %{POSTFIXCLEANUPMESSAGE}|%{POSTFIXCLEANUPMILTER}
 POSTFIXCLEANUPMESSAGE %{QUEUEID:qid}: (resent-)?message-id=<%{GREEDYDATA:messageid}>
 POSTFIXCLEANUPMILTER %{MILTERENDOFMESSAGE}
 
 # postfix/bounce
-POSTFIXBOUNCE %{SYSLOGBASE2} %{QUEUEID:qid}: sender non-delivery notification: %{QUEUEID:bouncequeueid}
+POSTFIXBOUNCE %{SYSLOGNOPROG} postfix/bounce\[%{POSINT:pid}\]: %{QUEUEID:qid}: sender non-delivery notification: %{QUEUEID:bouncequeueid}
 
 # postfix/qmgr and postfix/pickup
-POSTFIXQMGR %{SYSLOGBASE2} %{QUEUEID:qid}: (?:removed|from=<(?:%{EMAILADDRESS:from})?>(?:, size=%{POSINT:size}, nrcpt=%{POSINT:nrcpt} \(%{GREEDYDATA:queuestatus}\))?)
+POSTFIXQMGR %{SYSLOGNOPROG} postfix/qmgr\[%{POSINT:pid}\]: %{QUEUEID:qid}: (?:removed|from=<(?:%{EMAILADDRESS:from})?>(?:, size=%{POSINT:size}, nrcpt=%{POSINT:nrcpt} \(%{GREEDYDATA:queuestatus}\))?)
 
 # postfix/anvil
-POSTFIXANVIL %{SYSLOGBASE2} statistics: %{DATA:anvilstatistic} for (%{DATA:remotehost}) at %{SYSLOGTIMESTAMP:timestamp}
+POSTFIXANVIL %{SYSLOGNOPROG} postfix/anvil\[%{POSINT:pid}\]: statistics: %{DATA:anvilstatistic} for (%{DATA:remotehost}) at %{SYSLOGTIMESTAMP:timestamp}
 
-# postfix/virtual
-POSTFIXVIRTUAL %{SYSLOGBASE2} %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>, relay=virtual, delay=%{DELAY:delay}, delays=%{DELAYS:delays}, dsn=%{DSN:dsn}, status=%{STATUS:status} %{GREEDYDATA:reason}
+# postfix/relay:
+POSTFIXRELAY %{SYSLOGBASE2} %{QUEUEID:qid}: to=<%{EMAILADDRESS:to}>,(?:\sorig_to=<%{EMAILADDRESS:orig_to}>,)? relay=%{RELAY},(?: conn_use=%{POSREAL:conn_use},)? delay=%{DELAY:delay}, delays=%{DELAYS:delays}, dsn=%{DSN:dsn}, status=%{STATUS:status} %{GREEDYDATA:reason}
+
+# postfix-policyd
+POSTFIXPOLICY %{SYSLOGBASE2} rcpt=%{POSINT:rcpt}, (throttle|throttle_rcpt)=%{THROTTLE:throttle}, host=%{IP:clientip}, from=%{EMAILADDRESS:from}, to=%{EMAILADDRESS:to}%{GREEDYDATA:reason}
+
+# dovecot
+DOVECOT %{SYSLOGBASE2} %{DOVECOTAUTH}|%{DOVECOTLOGIN}|%{DOVECOTPROTO}
+DOVECOTPROTOCOL %{WORD}-%{WORD}
+DOVECOTAUTH auth-worker\(%{DATA:worker}\): %{DATA:backend}\(%{EMAILADDRESS:user},%{IP:clientip}\): %{GREEDYDATA:reason}
+DOVECOTLOGIN %{DOVECOTPROTOCOL:protocol}: %{DOVECOTLOGINLOGIN}|%{DOVECOTLOGINDISCONNECT}
+DOVECOTLOGINLOGIN Login: user=<%{EMAILADDRESS:user}>, method=%{DATA:method}, rip=%{IP:clientip}, lip=%{IP:localip}(?:\s, %{GREEDYDATA:reason})?
+DOVECOTLOGINDISCONNECT Disconnected \(%{DATA:authattempts}\): rip=%{IP:clientip}, lip=%{IP:localip}(?:\s, %{GREEDYDATA:reason})?
+DOVECOTPROTO %{WORD:protocol}\(%{EMAILADDRESS:user}\): %{GREEDYDATA:reason}
