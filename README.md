@@ -8,3 +8,7 @@ pare specific logs.
 Since we are Open Source minded we thought it was a good idea to publish the LogStash Grok patterns we are using.
 
 Most of them go with a bit of LogStash configuration as well to you can see how we use them.
+
+## License
+
+The Apache License. Please see [License File](LICENSE) for more information.
